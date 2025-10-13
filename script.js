@@ -10,14 +10,14 @@ let timer = 0;
 let timerInterval;
 
 const images = [
-  "Caramel Black Café Macchiato.png",
-  "Caramel Latte - size Tall _ size Grande.png",
-  "Caramel Latte Macchiato.png",
-  "Caramel Saigon Dreams_BG.png",
-  "Caramel Saigon Kaffé_BG.png",
-  "Honey Oolong Tea Latte.png",
-  "Honey Oolong Tea Macchiato.png",
-  "Hot Caramel Latte.png"
+  "1.png",
+  "2.png",
+  "3.png",
+  "4.png",
+  "5.png",
+  "6.png",
+  "7.png",
+  "8.png",
 ];
 
 let cardsArray = [...images, ...images];
