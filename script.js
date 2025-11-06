@@ -156,3 +156,38 @@ window.onload = () => {
     : "Thời gian nhanh nhất: -";
   startGame();
 };
+
+// Kết thúc game
+function gameOver() {
+  clearInterval(timerInterval);
+
+  // Lưu thời gian nhanh nhất
+  let bestTime = localStorage.getItem("bestTime");
+  bestTime = bestTime ? parseInt(bestTime) : Infinity;
+
+  if (timer < bestTime) {
+    localStorage.setItem("bestTime", timer);
+    bestTime = timer;
+  }
+
+  bestScoreDisplay.textContent = `Thời gian nhanh nhất: ${bestTime}s`;
+
+  // 🔥 Hiện hình hoàn thành
+  const finalImageContainer = document.getElementById("final-image-container");
+  const finalImage = document.getElementById("final-image");
+
+  finalImageContainer.style.display = "block";
+
+  // Hiện mờ dần
+  setTimeout(() => {
+    finalImage.classList.add("show");
+  }, 200);
+
+  // Sau vài giây hiện thông báo & chơi lại
+  setTimeout(() => {
+    alert(`Hoàn thành! Thời gian: ${timer}s`);
+    finalImage.classList.remove("show");
+    finalImageContainer.style.display = "none";
+    startGame();
+  }, 5000); // Hiện hình trong 5 giây
+}

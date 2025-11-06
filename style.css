@@ -95,3 +95,22 @@ h1 {
     font-size: 14px;
   }
 }
+
+/* Hình hoàn thành */
+#final-image-container {
+  display: none; /* Ẩn mặc định */
+  text-align: center;
+  margin-top: 20px;
+}
+
+#final-image {
+  width: 80%;
+  max-width: 500px; /* Kích thước hình gốc to nhất */
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+#final-image.show {
+  opacity: 1;
+}
