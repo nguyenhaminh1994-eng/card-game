@@ -1,13 +1,13 @@
 const gameBoard = document.getElementById("game-board");
 const timerDisplay = document.getElementById("timer");
 const bestScoreDisplay = document.getElementById("best-score");
+const finalOverlay = document.getElementById("final-image-overlay");
+const restartBtn = document.getElementById("restart-btn");
 
 let firstCard = null;
 let secondCard = null;
 let lockBoard = false;
 let matchedPairs = 0;
-let timer = 0;
-let timerInterval;
 
 const images = [
   "1.png",
@@ -33,19 +33,13 @@ function shuffle(array) {
 
 // Khởi tạo game
 function startGame() {
+  finalOverlay.classList.remove("show"); // Ẩn overlay nếu đang hiện
   gameBoard.innerHTML = "";
   matchedPairs = 0;
-  timer = 0;
   firstCard = null;
   secondCard = null;
   lockBoard = false;
   timerDisplay.textContent = `Thời gian: 0s`;
-
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timer++;
-    timerDisplay.textContent = `Thời gian: ${timer}s`;
-  }, 1000);
 
   shuffle(cardsArray);
   cardsArray.forEach((img) => {
@@ -129,65 +123,22 @@ function resetTurn() {
 
 // Kết thúc game
 function gameOver() {
-  clearInterval(timerInterval);
+  // Hiện overlay với hình hoàn thành
+  finalOverlay.classList.add("show");
 
-  // Lưu thời gian nhanh nhất
-  let bestTime = localStorage.getItem("bestTime");
-  bestTime = bestTime ? parseInt(bestTime) : Infinity;
-
-  if (timer < bestTime) {
-    localStorage.setItem("bestTime", timer);
-    bestTime = timer;
-  }
-
+  // Cập nhật best time (nếu cần)
+  let bestTime = localStorage.getItem("bestTime") || "-";
   bestScoreDisplay.textContent = `Thời gian nhanh nhất: ${bestTime}s`;
-
-  setTimeout(() => {
-    alert(`Hoàn thành! Thời gian: ${timer}s`);
-    startGame();
-  }, 500);
 }
 
-// Load thời gian nhanh nhất khi mở trang
+// Nút bắt đầu lại
+restartBtn.addEventListener("click", startGame);
+
+// Load lần đầu
 window.onload = () => {
   const bestTime = localStorage.getItem("bestTime") || "-";
-  bestScoreDisplay.textContent = bestTime !== "-" 
-    ? `Thời gian nhanh nhất: ${bestTime}s` 
+  bestScoreDisplay.textContent = bestTime !== "-"
+    ? `Thời gian nhanh nhất: ${bestTime}s`
     : "Thời gian nhanh nhất: -";
   startGame();
 };
-
-// Kết thúc game
-function gameOver() {
-  clearInterval(timerInterval);
-
-  // Lưu thời gian nhanh nhất
-  let bestTime = localStorage.getItem("bestTime");
-  bestTime = bestTime ? parseInt(bestTime) : Infinity;
-
-  if (timer < bestTime) {
-    localStorage.setItem("bestTime", timer);
-    bestTime = timer;
-  }
-
-  bestScoreDisplay.textContent = `Thời gian nhanh nhất: ${bestTime}s`;
-
-  // 🔥 Hiện hình hoàn thành
-  const finalImageContainer = document.getElementById("final-image-container");
-  const finalImage = document.getElementById("final-image");
-
-  finalImageContainer.style.display = "block";
-
-  // Hiện mờ dần
-  setTimeout(() => {
-    finalImage.classList.add("show");
-  }, 200);
-
-  // Sau vài giây hiện thông báo & chơi lại
-  setTimeout(() => {
-    alert(`Hoàn thành! Thời gian: ${timer}s`);
-    finalImage.classList.remove("show");
-    finalImageContainer.style.display = "none";
-    startGame();
-  }, 5000); // Hiện hình trong 5 giây
-}
