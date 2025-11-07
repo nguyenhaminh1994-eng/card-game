@@ -1,13 +1,16 @@
 const gameBoard = document.getElementById("game-board");
 const timerDisplay = document.getElementById("timer");
 const bestScoreDisplay = document.getElementById("best-score");
-const finalOverlay = document.getElementById("final-image-overlay");
 const restartBtn = document.getElementById("restart-btn");
+const finalImage = document.getElementById("final-image");
 
 let firstCard = null;
 let secondCard = null;
 let lockBoard = false;
 let matchedPairs = 0;
+let timer = 0;
+let timerInterval;
+let gameRunning = false;
 
 const images = [
   "1.png",
@@ -22,7 +25,7 @@ const images = [
 
 let cardsArray = [...images, ...images];
 
-// Trộn bài
+// 🔹 Hàm trộn bài
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -31,15 +34,23 @@ function shuffle(array) {
   return array;
 }
 
-// Khởi tạo game
+// 🔹 Bắt đầu game
 function startGame() {
-  finalOverlay.classList.remove("show"); // Ẩn overlay nếu đang hiện
   gameBoard.innerHTML = "";
+  finalImage.style.display = "none";
   matchedPairs = 0;
+  timer = 0;
   firstCard = null;
   secondCard = null;
   lockBoard = false;
+  gameRunning = true;
+
   timerDisplay.textContent = `Thời gian: 0s`;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timer++;
+    timerDisplay.textContent = `Thời gian: ${timer}s`;
+  }, 1000);
 
   shuffle(cardsArray);
   cardsArray.forEach((img) => {
@@ -59,9 +70,9 @@ function startGame() {
   });
 }
 
-// Lật thẻ
+// 🔹 Lật thẻ
 function flipCard() {
-  if (lockBoard || this === firstCard || this.style.visibility === "hidden") return;
+  if (!gameRunning || lockBoard || this === firstCard || this.style.visibility === "hidden") return;
 
   this.classList.add("flip");
 
@@ -74,7 +85,7 @@ function flipCard() {
   checkMatch();
 }
 
-// Kiểm tra ghép cặp
+// 🔹 Kiểm tra ghép đúng/sai
 function checkMatch() {
   if (firstCard.dataset.name === secondCard.dataset.name) {
     correctMatch();
@@ -83,7 +94,7 @@ function checkMatch() {
   }
 }
 
-// Ghép đúng
+// 🔹 Khi ghép đúng
 function correctMatch() {
   lockBoard = true;
 
@@ -104,7 +115,7 @@ function correctMatch() {
   }, 200);
 }
 
-// Ghép sai
+// 🔹 Khi ghép sai
 function wrongMatch() {
   lockBoard = true;
   setTimeout(() => {
@@ -115,30 +126,42 @@ function wrongMatch() {
   }, 800);
 }
 
-// Reset lượt
+// 🔹 Reset lượt
 function resetTurn() {
   firstCard = null;
   secondCard = null;
 }
 
-// Kết thúc game
+// 🔹 Kết thúc game
 function gameOver() {
-  // Hiện overlay với hình hoàn thành
-  finalOverlay.classList.add("show");
+  gameRunning = false;
+  clearInterval(timerInterval);
 
-  // Cập nhật best time (nếu cần)
-  let bestTime = localStorage.getItem("bestTime") || "-";
+  // Hiện hình final
+  finalImage.style.display = "block";
+
+  // Lưu thời gian nhanh nhất
+  let bestTime = localStorage.getItem("bestTime");
+  bestTime = bestTime ? parseInt(bestTime) : Infinity;
+
+  if (timer < bestTime) {
+    localStorage.setItem("bestTime", timer);
+    bestTime = timer;
+  }
+
   bestScoreDisplay.textContent = `Thời gian nhanh nhất: ${bestTime}s`;
 }
 
-// Nút bắt đầu lại
-restartBtn.addEventListener("click", startGame);
+// 🔹 Nút chơi lại
+// restartBtn.addEventListener("click", () => {
+//   startGame();
+// });
 
-// Load lần đầu
+// 🔹 Khi load trang, hiển thị best time và bắt đầu game
 window.onload = () => {
   const bestTime = localStorage.getItem("bestTime") || "-";
-  bestScoreDisplay.textContent = bestTime !== "-"
-    ? `Thời gian nhanh nhất: ${bestTime}s`
+  bestScoreDisplay.textContent = bestTime !== "-" 
+    ? `Thời gian nhanh nhất: ${bestTime}s` 
     : "Thời gian nhanh nhất: -";
   startGame();
 };
