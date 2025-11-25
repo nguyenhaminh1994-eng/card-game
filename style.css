@@ -76,13 +76,15 @@ h1{ margin:0 0 12px; font-size:22px; }
 
 /* final full image overlay - placed absolute/inset:0 to exactly cover board */
 #final-full{
+  position:absolute;
+  inset:0;
   width:100%;
   height:100%;
   object-fit:cover;
   border-radius:8px;
-  display:inline-block;
-  opacity: 1; /* Đảm bảo opacity là 1 */
-  transition: opacity 0.5s ease;
+  display:none;
+  z-index:10;
+  box-shadow:0 8px 24px rgba(0,0,0,0.18);
 }
 
 /* show final */
