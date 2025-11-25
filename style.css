@@ -1,123 +1,104 @@
-body {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  background: #f5f5f5;
-  margin: 0;
-  padding: 20px;
+:root{
+  --board-max-width: 660px;
+  --gap: 10px;
 }
 
-h1 {
-  margin-bottom: 10px;
-  font-size: 24px;
+/* page */
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  background:#f5f5f5;
+  margin:0;
+  padding:20px;
+  text-align:center;
+}
+h1{ margin:0 0 12px; font-size:22px; }
+.info{ display:flex; gap:12px; justify-content:center; margin-bottom:12px; }
+
+/* board container to overlay final-full exactly */
+#board-wrap{
+  position:relative;
+  width:100%;
+  max-width:var(--board-max-width);
+  margin:0 auto;
 }
 
-.info {
-  margin-bottom: 15px;
-  font-size: 16px;
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  gap: 10px;
+/* grid 4 cols x 3 rows */
+#game-board{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+  background: transparent;
 }
 
-#game-board {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
-  max-width: 600px;
-  margin: 0 auto;
+/* square card using padding trick */
+.card{
+  position:relative;
+  width:100%;
+  padding-top:100%; /* square */
+  perspective:900px;
+  cursor:pointer;
 }
-
-.card {
-  width: 100%;
-  padding-top: 100%; /* Vuông */
-  position: relative;
-  perspective: 1000px;
-  cursor: pointer;
-}
-
-.card-inner {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  transition: transform 0.6s;
+.card-inner{
+  position:absolute;
+  inset:0;
+  transition: transform 0.55s;
   transform-style: preserve-3d;
 }
-
-.card.flip .card-inner {
+.card.flip .card-inner{
   transform: rotateY(180deg);
 }
 
-.card-front,
-.card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  border-radius: 8px;
+/* faces */
+.face{
+  position:absolute;
+  inset:0;
+  border-radius:8px;
+  backface-visibility:hidden;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
-
-.card-front {
-  background: url("images/final.jpg") center/cover no-repeat;
+.face.front{
+  background:#ddd;
 }
-
-.card-back {
+.face.front img, .face.back img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.face.back{
   transform: rotateY(180deg);
-  background: #fff;
 }
 
-.card-back img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
+/* matched: keep flipped and mark */
+.card.matched .card-inner{ transform: rotateY(180deg) !important; }
+
+/* final full image overlay - placed absolute/inset:0 to exactly cover board */
+#final-full{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:8px;
+  display:inline-block;
+  opacity: 1; /* Đảm bảo opacity là 1 */
+  transition: opacity 0.5s ease;
 }
 
-.fade-out {
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
+/* show final */
+#final-full.show{
+  display:block; 
+  opacity: 1;
+  animation: fadeIn 0.45s ease;
 }
 
-/* Final image & restart button */
-#final-image {
-  display: none;
-  width: 100%;
-  max-width: 600px;
-  margin: 20px auto;
-  border-radius: 10px;
-  box-shadow: 0 0 10px #aaa;
+/* controls */
+.controls{ margin-top:14px; }
+button{ padding:8px 14px; border-radius:8px; border:none; background:#28a745; color:#fff; cursor:pointer; }
+button:hover{ opacity:0.95; }
+
+/* responsive */
+@media (max-width:520px){
+  :root{ --board-max-width:340px; --gap:6px; }
 }
-
-/* #restart-btn {
-  display: block;
-  margin: 15px auto;
-  padding: 10px 20px;
-  font-size: 16px;
-  border: none;
-  background-color: #2c7;
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-} */
-
-#restart-btn:hover {
-  background-color: #28a;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  #game-board {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px;
-  }
-
-  h1 {
-    font-size: 20px;
-  }
-
-  .info {
-    font-size: 14px;
-  }
-}
+@keyframes fadeIn{ from{ opacity:0; transform: scale(.98); } to{ opacity:1; transform:none; } }

@@ -1,167 +1,225 @@
-const gameBoard = document.getElementById("game-board");
-const timerDisplay = document.getElementById("timer");
-const bestScoreDisplay = document.getElementById("best-score");
-const restartBtn = document.getElementById("restart-btn");
-const finalImage = document.getElementById("final-image");
+// ===== CONFIG =====
+const ROWS = 3;
+const COLS = 4;
+const TOTAL = ROWS * COLS; // 12 tiles
 
-let firstCard = null;
-let secondCard = null;
-let lockBoard = false;
-let matchedPairs = 0;
+// elements
+const gameBoard = document.getElementById('game-board');
+const finalFull = document.getElementById('final-full');
+const restartBtn = document.getElementById('restart-btn');
+const timerDisplay = document.getElementById('timer');
+const bestScoreDisplay = document.getElementById('best-score');
+
+// state
+let deck = [];       // list of ids 1..6 duplicated to fill 12 tiles
+let assigned = [];   // assigned faceup id per position (length 12)
+let opened = [];     // opened cards (up to 2)
+let lock = false;
+let matched = 0;
 let timer = 0;
-let timerInterval;
-let gameRunning = false;
+let timerInterval = null;
+let timerRunning = false;
 
-const images = [
-  "1.png",
-  "2.png",
-  "3.png",
-  "4.png",
-  "5.png",
-  "6.png",
-  "7.png",
-  "8.png",
+// images settings
+const facedownSrc = 'images/facedown.png';   // ← THÊM THEO YÊU CẦU
+const faceupSources = [
+  'images/faceup_1.png',
+  'images/faceup_2.png',
+  'images/faceup_3.png',
+  'images/faceup_4.png',
+  'images/faceup_5.png',
+  'images/faceup_6.png'
 ];
 
-let cardsArray = [...images, ...images];
-
-// 🔹 Hàm trộn bài
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
+// piece images under images/piece_final/piece_1.png .. piece_12.png
+function piecePath(index){ // index 1..12
+  return `images/piece_final/piece_${index}.png`;
 }
 
-// 🔹 Bắt đầu game
-function startGame() {
-  gameBoard.innerHTML = "";
-  finalImage.style.display = "none";
-  matchedPairs = 0;
+// shuffle helper
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// START GAME
+function startGame(){
+  // reset
+  gameBoard.innerHTML = '';
+  finalFull.classList.remove('show');
+  finalFull.style.display = 'none';
+  opened = [];
+  lock = false;
+  matched = 0;
+  stopTimer();
   timer = 0;
-  firstCard = null;
-  secondCard = null;
-  lockBoard = false;
-  gameRunning = true;
+  timerRunning = false;
+  updateTimerDisplay(0);
+  updateBestDisplay();
 
-  timerDisplay.textContent = `Thời gian: 0s`;
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timer++;
-    timerDisplay.textContent = `Thời gian: ${timer}s`;
-  }, 1000);
+  // build faceup pool
+  deck = [];
+  for(let i=1;i<=6;i++) deck.push(i);
+  deck = [...deck, ...deck];
+  shuffle(deck);
 
-  shuffle(cardsArray);
-  cardsArray.forEach((img) => {
-    const card = document.createElement("div");
-    card.classList.add("card");
-    card.dataset.name = img;
+  assigned = deck.slice();
 
-    card.innerHTML = `
-      <div class="card-inner">
-        <div class="card-front"></div>
-        <div class="card-back"><img src="images/${img}" alt=""></div>
-      </div>
-    `;
+  // create cards
+  for(let pos=0; pos<TOTAL; pos++){
+    const id = assigned[pos];
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.pos = pos;
+    card.dataset.face = id;
 
-    card.addEventListener("click", flipCard);
+    const inner = document.createElement('div');
+    inner.className = 'card-inner';
+
+    // ---- FRONT (facedown.png) ----
+    const front = document.createElement('div');
+    front.className = 'face front';
+    const fimg = document.createElement('img');
+    fimg.src = facedownSrc;   // ← SỬ DỤNG facedown.png
+    fimg.alt = 'facedown';
+    front.appendChild(fimg);
+
+    // ---- BACK (faceup) ----
+    const back = document.createElement('div');
+    back.className = 'face back';
+    const bimg = document.createElement('img');
+    bimg.src = faceupSources[id - 1];
+    bimg.alt = `faceup ${id}`;
+    back.appendChild(bimg);
+
+    inner.appendChild(front);
+    inner.appendChild(back);
+    card.appendChild(inner);
+
+    card.addEventListener('click', () => onCardClick(card));
+
     gameBoard.appendChild(card);
-  });
+  }
 }
 
-// 🔹 Lật thẻ
-function flipCard() {
-  if (!gameRunning || lockBoard || this === firstCard || this.style.visibility === "hidden") return;
+// CLICK HANDLER
+function onCardClick(card){
+  if(lock) return;
+  if(card.classList.contains('flip') || card.classList.contains('matched')) return;
 
-  this.classList.add("flip");
-
-  if (!firstCard) {
-    firstCard = this;
-    return;
+  if(!timerRunning){
+    startTimer();
+    timerRunning = true;
   }
 
-  secondCard = this;
-  checkMatch();
+  card.classList.add('flip');
+  opened.push(card);
+
+  if(opened.length === 2){
+    lock = true;
+    setTimeout(checkPair, 600);
+  }
 }
 
-// 🔹 Kiểm tra ghép đúng/sai
-function checkMatch() {
-  if (firstCard.dataset.name === secondCard.dataset.name) {
-    correctMatch();
+// CHECK PAIR
+function checkPair(){
+  const [a,b] = opened;
+  if(!a || !b){ opened = []; lock = false; return; }
+
+  const faceA = a.dataset.face;
+  const faceB = b.dataset.face;
+
+  if(faceA === faceB){
+    a.classList.add('matched');
+    b.classList.add('matched');
+
+    const posA = parseInt(a.dataset.pos, 10);
+    const posB = parseInt(b.dataset.pos, 10);
+
+    const backImgA = a.querySelector('.face.back img');
+    const backImgB = b.querySelector('.face.back img');
+
+    backImgA.src = piecePath(posA + 1);
+    backImgB.src = piecePath(posB + 1);
+
+    matched += 2;
+
+    if(matched === TOTAL){
+      stopTimer();
+      trySaveBestTime(timer);
+      setTimeout(()=> revealFull(), 450);
+    }
   } else {
-    wrongMatch();
-  }
-}
-
-// 🔹 Khi ghép đúng
-function correctMatch() {
-  lockBoard = true;
-
-  setTimeout(() => {
-    firstCard.classList.add("fade-out");
-    secondCard.classList.add("fade-out");
-
-    setTimeout(() => {
-      firstCard.style.visibility = "hidden";
-      secondCard.style.visibility = "hidden";
-
-      matchedPairs++;
-      resetTurn();
-      lockBoard = false;
-
-      if (matchedPairs === images.length) gameOver();
-    }, 400);
-  }, 200);
-}
-
-// 🔹 Khi ghép sai
-function wrongMatch() {
-  lockBoard = true;
-  setTimeout(() => {
-    firstCard.classList.remove("flip");
-    secondCard.classList.remove("flip");
-    resetTurn();
-    lockBoard = false;
-  }, 800);
-}
-
-// 🔹 Reset lượt
-function resetTurn() {
-  firstCard = null;
-  secondCard = null;
-}
-
-// 🔹 Kết thúc game
-function gameOver() {
-  gameRunning = false;
-  clearInterval(timerInterval);
-
-  // Hiện hình final
-  finalImage.style.display = "block";
-
-  // Lưu thời gian nhanh nhất
-  let bestTime = localStorage.getItem("bestTime");
-  bestTime = bestTime ? parseInt(bestTime) : Infinity;
-
-  if (timer < bestTime) {
-    localStorage.setItem("bestTime", timer);
-    bestTime = timer;
+    a.classList.remove('flip');
+    b.classList.remove('flip');
   }
 
-  bestScoreDisplay.textContent = `Thời gian nhanh nhất: ${bestTime}s`;
+  opened = [];
+  lock = false;
 }
 
-// 🔹 Nút chơi lại
-// restartBtn.addEventListener("click", () => {
-//   startGame();
-// });
+// SHOW FINAL IMAGE
+function revealFull(){
+  const cards = document.querySelectorAll('.card');
+  cards.forEach(c => {
+    c.style.transition = 'opacity 0.35s';
+    c.style.opacity = '0';
+  });
 
-// 🔹 Khi load trang, hiển thị best time và bắt đầu game
-window.onload = () => {
-  const bestTime = localStorage.getItem("bestTime") || "-";
-  bestScoreDisplay.textContent = bestTime !== "-" 
-    ? `Thời gian nhanh nhất: ${bestTime}s` 
-    : "Thời gian nhanh nhất: -";
+  setTimeout(()=>{
+    cards.forEach(c => c.style.display = 'none');
+    finalFull.style.display = 'block';
+    finalFull.classList.add('show');
+  }, 360);
+}
+
+// TIMER
+function startTimer(){
+  if(timerInterval) return;
+  timerInterval = setInterval(()=>{
+    timer++;
+    updateTimerDisplay(timer);
+  }, 1000);
+}
+function stopTimer(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+}
+function updateTimerDisplay(sec){
+  timerDisplay.textContent = `Thời gian: ${sec}s`;
+}
+function trySaveBestTime(sec){
+  const key = 'bestTime';
+  let best = localStorage.getItem(key);
+  best = best ? parseInt(best,10) : Infinity;
+  if(sec < best){
+    localStorage.setItem(key, sec);
+    bestScoreDisplay.textContent = `Thời gian nhanh nhất: ${sec}s`;
+  } else if(best !== Infinity){
+    bestScoreDisplay.textContent = `Thời gian nhanh nhất: ${best}s`;
+  }
+}
+function updateBestDisplay(){
+  const key = 'bestTime';
+  const best = localStorage.getItem(key);
+  bestScoreDisplay.textContent = best ? `Thời gian nhanh nhất: ${best}s` : 'Thời gian nhanh nhất: -';
+}
+
+// RESTART
+restartBtn.addEventListener('click', ()=>{
+  const cards = document.querySelectorAll('.card');
+  cards.forEach(c => {
+    c.style.display = '';
+    c.style.opacity = '';
+    c.className = 'card';
+  });
+  finalFull.classList.remove('show');
+  finalFull.style.display = 'none';
   startGame();
-};
+});
+
+// initial
+startGame();
+window.addEventListener('resize', ()=>{});
